@@ -253,12 +253,12 @@ class DNSProtocol(object):
         if self.using_tcp:
             self._buffer = b''
 
-            sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
-            sock.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
-            self.bind_random_port(sock)
+            # sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+            # sock.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+            # self.bind_random_port(sock)
             f = asyncio.ensure_future(loop.create_connection(lambda: self,
-                                                             host=self.server,
-                                                             sock=sock))
+                                                             host=self.server[0],
+                                                             port=self.server[1]))
 
             def callback(f):
                 if f.cancelled():
@@ -270,12 +270,12 @@ class DNSProtocol(object):
                     self.fail_waiters(exc)
                     return
 
-                packet = build_dns_packet(uid, query, not self.recursive)
+                packet = build_dns_packet(self.uid, self.query, not self.recursive)
                 len_bytes = struct.pack(b'>H', len(packet))
 
                 transport, _ = f.result()
                 try:
-                    transport.writelines(len_bytes, packet)
+                    transport.writelines([len_bytes, packet])
                 except:
                     e = sys.exc_info()[0]
                     self.fail_waiters(e)
@@ -349,6 +349,9 @@ class DNSProtocol(object):
                     self._buffer = b''
                 else:
                     self.resolver().protocol_done(self)
+
+    def eof_received(self):
+        return False
 
     def decode_rr(self, packet, ptr, rcode):
         name, ptr = decode_domain(packet, ptr)

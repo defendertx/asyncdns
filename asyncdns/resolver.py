@@ -235,7 +235,7 @@ class DNSProtocol(object):
         except StopIteration as e:
             self.fail_waiters(e)
 
-        if (isinstance(self.server[0], ipaddress.IPv4Address)
+        if self.prefer_ipv6 and (isinstance(self.server[0], ipaddress.IPv4Address)
             or (isinstance(self.server[0], str)
                 and _ipv4_re.match(self.server[0]))):
             self.server = ('::ffff:' + str(self.server[0]), self.server[1])
